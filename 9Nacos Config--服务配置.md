@@ -22,7 +22,7 @@
 
 当加入了服务配置中心之后，我们的系统架构图会变成下面这样：  
 
-![](img\配置中心.png)
+![](img/配置中心.png)
 
 在业界常见的服务配置中心，有下面这些：  
 
@@ -83,7 +83,7 @@ spring:
 > 2）配置文件格式要跟配置文件的格式对应，且目前仅仅支持YAML和Properties
 > 3）配置内容按照上面选定的格式书写  
 
-![](img\nacosconfig配置.png)
+![](img/nacosconfig配置.png)
 
 5 注释本地的`application.yaml`中的内容， 启动程序进行测试
 如果依旧可以成功访问程序，说明我们nacos的配置中心功能已经实现  
@@ -142,15 +142,15 @@ public class NacosConfigController {
 面即可。
 1 新建一个名为`service-product.yaml`配置存放商品微服务的公共配置  
 
-![](img\config动态.png)
+![](img/config动态.png)
 
 2 新建一个名为`service-product-test.yaml`配置存放测试环境的配置  
 
-![](img\动态2.png)
+![](img/动态2.png)
 
 3 新建一个名为`consumer-dev.yaml`配置存放开发环境的配置  s
 
-![](img\动态3.png)
+![](img/动态3.png)
 
 4 添加测试方法  
 
@@ -170,7 +170,7 @@ public class NacosConfigController {
 
 5 访问测试  
 
-![](img\动态测试.png)
+![](img/动态测试.png)
 
 6 接下来，修改`bootstrap.yml`中的配置，将active设置成test，再次访问，观察结果  
 
@@ -245,4 +245,4 @@ spring:
 **配置集(Data ID)**
 	在系统中，一个配置文件通常就是一个配置集。一般微服务的配置就是一个配置集  
 
-![](img\nacos概念.png)
+![](img/nacos概念.png)

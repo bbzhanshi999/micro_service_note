@@ -15,7 +15,7 @@
 - 如何梳理服务依赖以及依赖的合理性？
 - 如何分析链路性能问题以及实时容量规划？  
 
-![](img/\链路追踪.png)
+![](img/链路追踪.png)
 
 ​		分布式链路追踪（Distributed Tracing），就是将一次分布式请求还原成调用链路，进行日志记
 录，性能监控并将一次分布式请求的调用情况集中展示。比如各个服务节点上的耗时、请求具体到达哪
@@ -62,7 +62,7 @@ Dapper的设计， 先来了解一下Sleuth中的术语和相关概念。
   **ss**（Server Send）服务端处理完毕准备发送到客户端， ss - sr = 服务器上的请求处理时间
   **cr**（Client Reveived）客户端接受到服务端的响应，请求结束。 cr - sr = 请求的总时间  
 
-![](img/\sleuth.png)
+![](img/sleuth.png)
 
 ### 6.2.2 Sleuth入门  
 
@@ -88,7 +88,7 @@ Dapper的设计， 先来了解一下Sleuth中的术语和相关概念。
 
 启动微服务，调用之后，我们可以在控制台观察到sleuth的日志输出  
 
-![](img/\sleuth日志.png)
+![](img/sleuth日志.png)
 
 ​	其中 `5399d5cb061971bd` 是`TraceId`， `5399d5cb061971bd` 是`SpanId`，依次调用有一个全局的
 `TraceId`，将调用链路串起来。仔细分析每个微服务的日志，不难看出请求的具体过程  
@@ -112,7 +112,7 @@ Dapper的设计， 先来了解一下Sleuth中的术语和相关概念。
 
 ​	Zipkin 提供了可插拔数据存储方式： In-Memory、 MySql、 Cassandra 以及 Elasticsearch。  
 
-![](img/\zipkin.png)
+![](img/zipkin.png)
 
 上图展示了 Zipkin 的基础架构，它主要由 4 个核心组件构成：  
 
@@ -146,7 +146,7 @@ java -jar zipkin-server-2.12.9-exec.jar
 
 第3步：通过浏览器访问 http://localhost:9411访问  
 
-![](img/\zipkin2.png)
+![](img/zipkin2.png)
 
 ### 6.3.3 Zipkin客户端集成  
 
@@ -181,11 +181,11 @@ http://localhost:7000/order-serv/order/prod/1
 
 第4步: 访问zipkin的UI界面，观察效果  
 
-![](img/\zipkin效果.png)
+![](img/zipkin效果.png)
 
 第5步：点击其中一条记录，可观察一次访问的详细线路。  
 
-![](img/\zipkin3.png)
+![](img/zipkin3.png)
 
 ## 6.4 ZipKin数据持久化  
 
