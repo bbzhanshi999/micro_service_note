@@ -114,6 +114,46 @@ startup.cmd -m standalone
 
 ![](img/19.png)
 
+#### 3.3.3.1 docker搭建nacos
+
+编写custom.properties
+
+```properties
+management.endpoints.web.exposure.include=*
+```
+
+编写如下docker-compose.yaml
+
+```yaml
+version: "3"
+services:
+  shop-db:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    restart:
+      always
+    volumes:
+      - /opt/data:/var/lib/mysql/
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+  nacos-server:
+    image: nacos/nacos-server
+    environment:
+      - PREFER_HOST_MODE=hostname
+      - MODE=standalone
+    restart:
+      always
+    volumes:
+      - /opt/nacos/standalone-logs/:/home/nacos/logs
+      - ./nacos/custom.properties:/home/nacos/init.d/custom.properties
+    ports:
+      - "8848:8848"
+
+```
+
+执行命令`docker-compose up -d`
+
 ### **3.3.2** 将商品微服务注册到nacos
 
 接下来开始修改 shop-product 模块的代码， 将其注册到nacos服务上
@@ -200,7 +240,7 @@ public class OrderController {
         log.info(">>客户下单， 这时候要调用商品微服务查询商品信息");
         //从nacos中获取服务地址
         ServiceInstance serviceInstance =
-        discoveryClient.getInstances("service-product").get(0);
+        discoveryClient.getInstances("shop-product").get(0);
         String url = serviceInstance.getHost() + ":" +
         serviceInstance.getPort();
         log.info(">>从nacos中获取到的微服务地址为:" + url);
@@ -281,7 +321,7 @@ public class OrderController {
         log.info(">>客户下单， 这时候要调用商品微服务查询商品信息");
         //从nacos中获取服务地址
         //自定义规则实现随机挑选服务第3步：启动两个服务提供者和一个服务消费者，多访问几次消费者测试效果
-        List<ServiceInstance> instances = discoveryClient.getInstances("serviceproduct");
+        List<ServiceInstance> instances = discoveryClient.getInstances("shop-product");
         int index = new Random().nextInt(instances.size());
         ServiceInstance serviceInstance = instances.get(index);
         String url = serviceInstance.getHost() + ":" +
@@ -337,7 +377,7 @@ public class OrderController {
     public Order order(@PathVariable("pid") Integer pid) {
     log.info(">>客户下单， 这时候要调用商品微服务查询商品信息");
     //直接使用微服务名字， 从nacos中获取服务地址
-    String url = "service-product";
+    String url = "shop-product";
     //通过restTemplate调用商品微服务
     Product product = restTemplate.getForObject(
     "http://" + url + "/product/" + pid, Product.class);
@@ -374,10 +414,22 @@ public class OrderController {
 我们可以通过修改配置来调整Ribbon的负载均衡策略，具体代码如下  
 
 ```yaml
-service-product: # 调用的提供者的名称
+shop-product: # 调用的提供者的名称
 	ribbon:
 		NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
 ```
+
+并且注册策略到ioc中
+
+```java
+
+@Bean
+public IRule ribbonRule() {
+    return new RandomRule();//这里配置策略，和配置文件对应
+}
+```
+
+
 
 ## 3.5 基于Feign实现服务调用  
 
@@ -397,7 +449,7 @@ service-product: # 调用的提供者的名称
 <dependency>
     <groupId>org.springframework.cloud</groupId>
     <artifactId>spring-cloud-starter-openfeign</artifactId>
-</dependency
+</dependency>
 ```
 
 #### 2 在主类上添加Fegin的注解  
@@ -412,7 +464,7 @@ public class OrderApplication {}
 #### 3 创建一个service， 并使用Fegin实现微服务调用  
 
 ```java
-@FeignClient("service-product")//声明调用的提供者的name
+@FeignClient("shop-product")//声明调用的提供者的name
 public interface ProductService {
     //指定调用提供者的哪个方法
     //@FeignClient+@GetMapping 就是一个完整的请求路径 http://serviceproduct/product/{pid}
@@ -424,14 +476,13 @@ public interface ProductService {
 #### 4 修改controller代码，并启动验证  
 
  ```java
-@
-RestController
+@RestController
 @Slf4j
 public class OrderController {
     @Autowired
     private OrderService orderService;
     @Autowired
-    private ProductService productService;5 重启order微服务,查看效果
+    private ProductService productService;
 
     //准备买1件商品
     @GetMapping("/order/prod/{pid}")

@@ -1,4 +1,4 @@
-# 第四章 Sentinel--服务容错  
+#  第四章 Sentinel--服务容错  
 
 ## 4.1 高并发带来的问题
 
@@ -11,6 +11,19 @@
 #### 1 编写`OrderController2`代码  
 
 ```java
+package com.neuedu.web;
+
+import com.alibaba.fastjson.JSON;
+import com.neuedu.api.ProductService;
+import com.neuedu.bean.Order;
+import com.neuedu.bean.Product;
+import com.neuedu.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 @RestController
 @Slf4j
 public class OrderController2 {
@@ -18,7 +31,7 @@ public class OrderController2 {
     private OrderService orderService;
     @Autowired
     private ProductService productService;
-    @RequestMapping("/order/prod/{pid}")
+    @RequestMapping("/order2/prod/{pid}")
     public Order order(@PathVariable("pid") Integer pid) {
         log.info("接收到{}号商品的下单请求,接下来调用商品微服务查询此商品信息", pid);
         //调用商品微服务,查询商品信息
@@ -26,11 +39,11 @@ public class OrderController2 {
         log.info("查询到{}号商品的信息,内容是:{}", pid, JSON.toJSONString(product));
         //模拟一次网络延时
         try {
-       	 	Thread.sleep(100);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
-        	e.printStackTrace();
-        } /
-        /下单(创建订单)
+            e.printStackTrace();
+        }
+        //下单(创建订单)
         Order order = new Order();
         order.setUid(1);
         order.setUsername("测试用户");
@@ -42,11 +55,11 @@ public class OrderController2 {
         //orderService.createOrder(order);
         log.info("创建订单成功,订单信息为{}", JSON.toJSONString(order));
         return order;
-    } 
-    
+    }
+
     @RequestMapping("/order/message")
     public String message() {
-    	return "高并发下的问题测试";
+        return "高并发下的问题测试";
     }
 }
 ```
@@ -57,7 +70,7 @@ public class OrderController2 {
 server:
 	port: 8091
 	tomcat:
-		max-threads: 10 #tomcat的最大并发值修改为10,默认是200
+		max-threads: 2 #tomcat的最大并发值修改为2,默认是200
 ```
 
 #### 3 接下来使用压测工具,对请求进行压力测试  
@@ -139,6 +152,45 @@ server:
   > 2、限流是否自动实现？
   >
   > 线程池自动，Seamphore手动。
+  >
+  > 案例
+  >
+  > ```java
+  > import java.util.concurrent.ExecutorService;
+  > import java.util.concurrent.Executors;
+  > import java.util.concurrent.Semaphore;
+  > 
+  > public class SemaphoreTest {
+  >     public static void main(String[] args) {
+  >         ExecutorService exec = Executors.newFixedThreadPool(20);
+  >         Semaphore semp = new Semaphore(5);
+  >         for (int i = 0;i<20;i++){
+  >             exec.submit(new MyTask(semp));
+  >         }
+  >         exec.shutdown();
+  >     }
+  > 
+  >     private static class MyTask implements Runnable{
+  >         private Semaphore semaphore;
+  >         public MyTask(Semaphore semaphore){
+  >             this.semaphore = semaphore;
+  >         }
+  >         @Override
+  >         public void run() {
+  >             try {
+  >                 semaphore.acquire();
+  >                 Thread.sleep(2000);     //模拟2S的线程操作
+  >                 System.out.println(System.currentTimeMillis() +  ":done!");
+  >                 semaphore.release();
+  >             } catch (InterruptedException e) {
+  >                 e.printStackTrace();
+  >             }
+  >         }
+  >     }
+  > }
+  > ```
+  >
+  > 
 
   ![](img/隔离.png)
 
@@ -292,11 +344,14 @@ spring:
 	cloud:
 		sentinel:
 			transport:
-				port: 9999 #跟控制台交流的端口,随意指定一个未使用的端口即可
-				dashboard: localhost:8080 # 指定控制台服务的地址
+				port: 8719 #跟控制台交流的端口,随意指定一个未使用的端口即可
+				dashboard: 192.168.134.101:8858 # 指定控制台服务的地址
+				clientIp: 192.168.134.1 #如果是docker部署sentienl dashboard需要添加此配置，否则iptables可能无法正确识别宿主机ip
 ```
 
 第4步: 通过浏览器访问localhost:8080 进入控制台 ( 默认用户名密码是 sentinel/sentinel )  
+
+> 注意，sentinel采用了懒加载机制，因此，先任意访问一个服务接口后再刷新sentinel控制台才能看见服务
 
 ![](img/sentinel控制台.png)
 
@@ -520,7 +575,17 @@ spring:
 				enabled: false
 ```
 
-(3) 添加一个配置类，自己构建CommonFilter实例  
+(3)添加maven依赖
+
+```xml
+<dependency>
+    <groupId>com.alibaba.csp</groupId>
+    <artifactId>sentinel-web-servlet</artifactId>
+    <version>1.7.1</version>
+</dependency>
+```
+
+(4) 添加一个配置类，自己构建CommonFilter实例  
 
 ```java
 package com.neuedu.config;
