@@ -627,14 +627,12 @@ public class FilterContextConfig {
 
 降级规则就是设置当满足什么条件的时候，对服务进行降级。 Sentinel提供了三个衡量条件：  
 
-- 平均响应时间 ：当资源的平均响应时间超过阈值（以 ms 为单位）之后，资源进入准降级状态。
-  如果接下来 1s 内持续进入 5 个请求，它们的 RT都持续超过这个阈值，那么在接下的时间窗口
-  （以 s 为单位）之内，就会对这个方法进行服务降级。  
-
-  ![](img/平均响应时间.png)
+- **慢调用比例：**当资源的响应时间超过最大RT（以ms为单位，最大RT即最大响应时间）之后，资源进入准降级状态。如果接下来1s内持续进入5个请求（最小请求数），它们的RT都持续超过这个阈值，那么在接下来的熔断时长之内，就会对这个方法进行服务降级。*其中的“比例阈值”我设置发现无效，下次编辑会重置成1*  
+  
+  ![](img/慢调用比例.png)
 
   > 注意 Sentinel 默认统计的 RT 上限是 4900 ms，超出此阈值的都会算作 4900 ms，若需要
-  > 变更此上限可以通过启动配置项 -Dcsp.sentinel.statistic.max.rt=xxx 来配置。  
+> 变更此上限可以通过启动配置项 -Dcsp.sentinel.statistic.max.rt=xxx 来配置。  
 
 - 异常比例：当资源的每秒异常总数占通过量的比值超过阈值之后，资源进入降级状态，即在接下的
   时间窗口（以 s 为单位）之内，对这个方法的调用都会自动地返回。异常比率的阈值范围是 [0.0,
@@ -743,46 +741,64 @@ public class RequestOriginParserDefinition implements RequestOriginParser{
 - **Load（仅对 Linux/Unix-like 机器生效）**：当系统 load1 超过阈值，且系统当前的并发线程数超过
   系统容量时才会触发系统保护。系统容量由系统的 maxQps * minRt 计算得出。设定参考值一般
   是 CPU cores * 2.5。
+  
+  > 使用uptime命令查看linux服务器1 5 15负载
+  >
+  > ```bash
+  > uptime
+  > 08:15:57 up 59 min,  1 user,  load average: 0.15, 0.08, 0.06
+  > 
+  > ```
+  >
+  > 0.15的含义是最近1分钟的平均负载
+  > 0.08的含义是最近5分钟的平均负载
+  > 0.06的含义是最近15分钟的平均负载
+  
 - **RT**：当单台机器上所有入口流量的平均 RT 达到阈值即触发系统保护，单位是毫秒。
+
 - **线程数**：当单台机器上所有入口流量的并发线程数达到阈值即触发系统保护。
+
 - **入口 QPS**：当单台机器上所有入口流量的 QPS 达到阈值即触发系统保护。
+
 - **CPU使用率**：当单台机器上所有入口流量的 CPU使用率达到阈值即触发系统保护  
 
 #### 扩展: 自定义异常返回  
 
 ```java
-/
-/异常处理页面
+
+//异常处理页面
 @Component
-public class ExceptionHandlerPage implements UrlBlockHandler {
+public class ExceptionHandlerPage implements BlockExceptionHandler {
 //BlockException 异常接口,包含Sentinel的五个异常4.7 @SentinelResource的使用
 
-// FlowException 限流异常
-// DegradeException 降级异常
-// ParamFlowException 参数限流异常
-// AuthorityException 授权异常
-// SystemBlockException 系统负载异常
+    // FlowException 限流异常
+    // DegradeException 降级异常
+    // ParamFlowException 参数限流异常
+    // AuthorityException 授权异常
+    // SystemBlockException 系统负载异常
     @Override
-    public void blocked(HttpServletRequest request, HttpServletResponse
-    response, BlockException e) throws IOException {
+    public void handle(HttpServletRequest request, HttpServletResponse response, BlockException e) throws Exception {
         response.setContentType("application/json;charset=utf-8");
         ResponseData data = null;
         if (e instanceof FlowException) {
-        	data = new ResponseData(-1, "接口被限流了...");
+            data = new ResponseData(-1, "接口被限流了...");
         } else if (e instanceof DegradeException) {
-        	data = new ResponseData(-2, "接口被降级了...");
-        } 
+            data = new ResponseData(-2, "接口被降级了...");
+        }
         response.getWriter().write(JSON.toJSONString(data));
     }
-} 
 
-@Data
-@AllArgsConstructor//全参构造
-@NoArgsConstructor//无参构造
-class ResponseData {
-    private int code;
-    private String message;
+    @Data
+    @AllArgsConstructor//全参构造
+    @NoArgsConstructor
+    //无参构造
+    public static class ResponseData {
+        private int code;
+        private String message;
+    }
 }
+
+
 ```
 
 ## 4.7 @SentinelResource的使用  
