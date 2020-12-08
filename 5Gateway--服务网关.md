@@ -119,16 +119,16 @@ server:
 spring:
 	application:
 		name: api-gateway
-cloud:
-	gateway:
-    routes: # 路由数组[路由 就是指定当请求满足什么条件的时候转到哪个微服务]
-    	- id: product_route # 当前路由的标识, 要求唯一
-    	  uri: http://localhost:8081 # 请求要转发到的地址
-          order: 1 # 路由的优先级,数字越小级别越高
-          predicates: # 断言(就是路由转发要满足的条件)
-    		- Path=/product-serv/** # 当请求路径满足Path指定的规则时,才进行路由转发
-   		  filters: # 过滤器,请求在传递过程中可以通过过滤器对其进行一定的修改
-    		- StripPrefix=1 # 转发之前去掉1层路径
+    cloud:
+        gateway:
+            routes: # 路由数组[路由 就是指定当请求满足什么条件的时候转到哪个微服务]
+                - id: product_route # 当前路由的标识, 要求唯一
+                  uri: http://localhost:8081 # 请求要转发到的地址
+                  order: 1 # 路由的优先级,数字越小级别越高
+                  predicates: # 断言(就是路由转发要满足的条件)
+                    - Path=/product-serv/** # 当请求路径满足Path指定的规则时,才进行路由转发
+                  filters: # 过滤器,请求在传递过程中可以通过过滤器对其进行一定的修改
+                    - StripPrefix=1 # 转发之前去掉1层路径
 ```
 
 第4步: 启动项目, 并通过网关去访问微服务 

@@ -77,6 +77,10 @@ MQ，只要保证消息格式不变，消息的发送方和接收方并不需要
 
 接下来我们先在linux平台下安装一个RocketMQ的服务  
 
+> https://www.jianshu.com/p/706588323276
+>
+> docker安装方式
+
 #### 7.2.1.1 环境准备  
 
 ##### 下载RocketMQ
